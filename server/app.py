@@ -9,6 +9,10 @@ from process_files import process_file
 app = Flask(__name__)
 cors = CORS(app, origins="*")
 
+@app.route("/", methods=["get"])
+def get_root():
+     return jsonify({"api":"/"})
+
 @app.route("/files", methods=["POST"])
 def get_files():
     try:
@@ -123,7 +127,7 @@ def get_pdf():
     pdf_files = glob.glob(search_path)
 
     pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
-    print(pdf_files)
+  
     if(len(pdf_files)>0):
         return send_from_directory(pdf_path, pdf_files[0])
     else:
@@ -136,3 +140,6 @@ def get_pdf():
         if(len(pdf_files)>0):
              return send_from_directory(pdf_path, pdf_files[0])
     return send_from_directory(pdf_path, 'none.pdf')
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0",port=5000)
