@@ -1,0 +1,138 @@
+from flask import Flask, request, jsonify,send_from_directory
+import subprocess
+from flask_cors import CORS
+import glob
+import os
+import urllib.parse
+from process_files import process_file
+
+app = Flask(__name__)
+cors = CORS(app, origins="*")
+
+@app.route("/files", methods=["POST"])
+def get_files():
+    try:
+        data = request.get_json()
+        folders = data.get('folders')
+        customer = data.get('customer')
+        if not folders:
+            return jsonify({"error":"folders required"})
+        files = {}
+        for folder in folders: 
+            try:
+                files[folder] = [len(os.listdir(folder+"/"+customer))]
+                if os.path.exists(folder+"/"+customer+"/processed"):
+                    files[folder].append(len(os.listdir(folder+"/"+customer+"/processed")))
+                else:
+                    files[folder].append(0)    
+                if os.path.exists(folder+"/"+customer+"/processed/keywords.txt"):
+                    try:
+                        with open(folder+"/"+customer+"/processed/keywords.txt") as fp:
+                            files[folder].append(fp.read())
+                    except Exception as e:
+                        print(e)
+                        files[folder].append('')
+            except:
+                files[folder] = [0,0, '']     
+                  
+        return jsonify(files)
+    except Exception as e:
+        print(e)
+        return jsonify({"error":"Unable to complete your request"})
+
+     
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    try:
+        # Get the files and folder name from the request
+        
+        folder_names = request.form.get('folders').split(',')
+        customer = request.form.get('customer')
+        file_count = 0
+        for folder_name in folder_names:
+            files = request.files.getlist(folder_name)
+            # Check if the folder exists, create it if it doesn't
+            if os.path.exists(folder_name+"/"+customer):
+                print(folder_name+"/"+customer)
+                pdf_path =os.path.abspath(folder_name+"/"+customer)
+                # os.remove(pdf_path)
+                for filename in os.listdir(pdf_path):
+                    file_path = os.path.join(pdf_path, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                if(os.path.exists(folder_name+"/"+customer+"/processed")):
+                    pdf_path1 = os.path.abspath(folder_name+"/"+customer+"/processed")
+                    for filename in os.listdir(pdf_path1):
+                        file_path = os.path.join(pdf_path1, filename)
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+
+            if not os.path.exists(folder_name+"/"+customer):
+                os.makedirs(folder_name+"/"+customer)
+
+            # Save each file in the folder
+            for file in files:
+                if file.filename.endswith('.pdf'):
+                    file.save(os.path.join(folder_name+"/"+customer, file.filename))
+
+            # Get the total number of files in the folder
+            file_count = file_count + len(os.listdir(folder_name))  
+        response = {'message': 'Files uploaded successfully', 'files': file_count}
+        return jsonify(response)  
+    except Exception as e:
+        print(e)
+        return jsonify({"error":"error"})
+
+@app.route('/process', methods=['POST'])
+def process_files():
+      # Get the folder name from the request
+    folder_name = request.json.get('folder')
+    customer = request.json.get('customer')
+
+    # Check if the folder exists
+    if not os.path.exists(folder_name+"/"+customer):
+        return jsonify({'error': 'Folder not found'})
+    
+    # command = ['python', 'process_files.py', folder_name+"/"+customer]
+    # subprocess.Popen(command)
+    process_file(folder_name+"/"+customer)
+    
+    return jsonify({"processing":"done"})
+
+# get file list
+@app.route('/list', methods=['POST'])
+def get_file_list():
+    folders = request.json.get('folders')
+    files = {}
+    for folder in folders:
+        pdf_files = []
+        folder_path = os.path.abspath(folder)
+        search_path = os.path.join(folder_path, "*.pdf")
+        pdf_files = glob.glob(search_path)
+        pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
+        files[folder] = pdf_files
+    return jsonify(files)
+
+@app.route("/getpdf", methods=['get'])
+def get_pdf():
+    folder = urllib.parse.unquote(request.args.get("folder"))
+    customer = urllib.parse.unquote(request.args.get("customer"))
+    pdf_path =os.path.abspath(folder)+'/'+customer+'/processed'
+    search_path = os.path.join(pdf_path, "*.pdf")
+    pdf_files = glob.glob(search_path)
+
+    pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
+    print(pdf_files)
+    if(len(pdf_files)>0):
+        return send_from_directory(pdf_path, pdf_files[0])
+    else:
+        pdf_path =os.path.abspath(folder)+'/'+customer
+        search_path = os.path.join(pdf_path, "*.pdf")
+        pdf_files = glob.glob(search_path)
+        print(pdf_path)
+        pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
+        print(pdf_files)
+        if(len(pdf_files)>0):
+             return send_from_directory(pdf_path, pdf_files[0])
+    return send_from_directory(pdf_path, 'none.pdf')
