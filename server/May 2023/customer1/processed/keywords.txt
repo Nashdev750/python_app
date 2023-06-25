@@ -1,8 +1,0 @@
-BFS
-Fiji
-IOU
-IRM
-Kabbage
-SBF
-SBFS
-TRANSFER
