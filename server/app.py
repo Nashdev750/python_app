@@ -9,11 +9,11 @@ from process_files import process_file
 app = Flask(__name__)
 cors = CORS(app, origins="*")
 
-@app.route("/", methods=["get"])
+@app.route("/api/", methods=["get"])
 def get_root():
      return jsonify({"api":"/"})
 
-@app.route("/files", methods=["POST"])
+@app.route("/api/files", methods=["POST"])
 def get_files():
     try:
         data = request.get_json()
@@ -46,7 +46,7 @@ def get_files():
 
      
 
-@app.route('/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST'])
 def upload_file():
     try:
         # Get the files and folder name from the request
@@ -88,7 +88,7 @@ def upload_file():
         print(e)
         return jsonify({"error":"error"})
 
-@app.route('/process', methods=['POST'])
+@app.route('/api/process', methods=['POST'])
 def process_files():
       # Get the folder name from the request
     folder_name = request.json.get('folder')
@@ -105,7 +105,7 @@ def process_files():
     return jsonify({"processing":"done"})
 
 # get file list
-@app.route('/list', methods=['POST'])
+@app.route('/api/list', methods=['POST'])
 def get_file_list():
     folders = request.json.get('folders')
     files = {}
@@ -118,7 +118,7 @@ def get_file_list():
         files[folder] = pdf_files
     return jsonify(files)
 
-@app.route("/getpdf", methods=['get'])
+@app.route("/api/getpdf", methods=['get'])
 def get_pdf():
     folder = urllib.parse.unquote(request.args.get("folder"))
     customer = urllib.parse.unquote(request.args.get("customer"))
