@@ -140,6 +140,27 @@ def get_pdf():
         if(len(pdf_files)>0):
              return send_from_directory(pdf_path, pdf_files[0])
     return send_from_directory(pdf_path, 'none.pdf')
+@app.route("/api/delete", methods=['get'])
+def delete_pdf():
+    folder_name = urllib.parse.unquote(request.args.get("folder"))
+    customer = urllib.parse.unquote(request.args.get("customer"))
+
+    if os.path.exists(folder_name+"/"+customer):
+                
+                pdf_path =os.path.abspath(folder_name+"/"+customer)
+                # os.remove(pdf_path)
+                for filename in os.listdir(pdf_path):
+                    file_path = os.path.join(pdf_path, filename)
+                    if os.path.isfile(file_path):
+                        os.remove(file_path)
+                if(os.path.exists(folder_name+"/"+customer+"/processed")):
+                    pdf_path1 = os.path.abspath(folder_name+"/"+customer+"/processed")
+                    for filename in os.listdir(pdf_path1):
+                        file_path = os.path.join(pdf_path1, filename)
+                        if os.path.isfile(file_path):
+                            os.remove(file_path)
+    
+    return jsonify({"file":"success"})
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0",port=5000)
