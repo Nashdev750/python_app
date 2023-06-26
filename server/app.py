@@ -7,6 +7,7 @@ import urllib.parse
 from process_files import process_file
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 cors = CORS(app, origins="*")
 
 @app.route("/api/", methods=["get"])
