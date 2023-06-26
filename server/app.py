@@ -59,7 +59,7 @@ def upload_file():
             files = request.files.getlist(folder_name)
             # Check if the folder exists, create it if it doesn't
             if os.path.exists(folder_name+"/"+customer):
-                print(folder_name+"/"+customer)
+                
                 pdf_path =os.path.abspath(folder_name+"/"+customer)
                 # os.remove(pdf_path)
                 for filename in os.listdir(pdf_path):
@@ -81,13 +81,12 @@ def upload_file():
                 if file.filename.endswith('.pdf'):
                     file.save(os.path.join(folder_name+"/"+customer, file.filename))
 
-            # Get the total number of files in the folder
-            file_count = file_count + len(os.listdir(folder_name))  
-        response = {'message': 'Files uploaded successfully', 'files': file_count}
+            # Get the total number of files in the folder 
+        response = {'message': 'Files uploaded successfully', 'files': 3}
         return jsonify(response)  
     except Exception as e:
         print(e)
-        return jsonify({"error":"error"})
+        return jsonify({"error":str(e)})
 
 @app.route('/api/process', methods=['POST'])
 def process_files():
