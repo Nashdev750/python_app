@@ -28,6 +28,7 @@ def get_files():
                 files[folder] = [len(os.listdir(folder+"/"+customer))]
                 if os.path.exists(folder+"/"+customer+"/processed"):
                     files[folder].append(len(os.listdir(folder+"/"+customer+"/processed")))
+                    files[folder][0]  = files[folder][0] - 1
                 else:
                     files[folder].append(0)    
                 if os.path.exists(folder+"/"+customer+"/processed/keywords.txt"):
