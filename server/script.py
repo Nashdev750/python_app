@@ -109,32 +109,35 @@ def keywords_search(file):
     doc = fitz.open(file)
     text = ''
     for page in doc:
-        text +=page.get_text()
+        text +=page.get_text()+" "
     keywords = read_keywords()
     matched = []
     for keyword in keywords:
         try:
-            if keyword.lower() in text.lower():
-                matched.append(keyword)
-        except: pass   
-    directory_path = os.path.dirname(file)   
-    keywords_file_path = os.path.join(directory_path, "keywords.txt")
-    if os.path.exists(keywords_file_path):
-        os.remove(keywords_file_path)
-    with open(keywords_file_path, "a") as keywords_file:
-        keywords_file.write("\n".join(matched))
+            pattern = r"\b" + re.escape(str(keyword)) + r"\b"
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            if len(matches) > 0:
+                if keyword not in matched:
+                    matched.append(keyword)
+        except Exception as e: print(e)  
+    
     for page in doc:
         for match in matched:
-            words = page.search_for(match.strip(), ignorecase=True, quads=True)     
+            words = page.search_for(match.strip(), ignorecase=True)   
             for word in words:
                 color = colors[3]
-                points = [list(inner_tuple) for inner_tuple in word]
-                if points[1][0] - points[0][0] < 6:
-                            continue
-                add_highlight_annot(page, word, color) 
+                points = list(word)
+                points[0] = points[0]-12
+                points[2] = points[2]+12
+             
+                text_in_rect = page.get_textbox(tuple(points))
+                pattern = r"\b" + re.escape(match.strip()) + r"\b"
+                found = re.findall(pattern, text_in_rect, re.IGNORECASE)
+                if len(found) > 0:
+                    add_highlight_annot(page, word, color) 
    
     doc.saveIncr()
-    doc.close()               
+    doc.close()                
          
     # RuntimeError: Can't do incremental writes on a repaired file    
     # 5.10 Normal\05-02-2023\BUDD LAKE DINER\NEW MID Statement-534701850101809-04-2023.pdf    
