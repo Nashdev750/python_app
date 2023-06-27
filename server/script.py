@@ -5,8 +5,6 @@ import colorsys
 import glob
 import zipfile
 import os
-import threading
-import multiprocessing
 
 colors = [
         (0,1,0),
@@ -120,7 +118,12 @@ def keywords_search(file):
                 if keyword not in matched:
                     matched.append(keyword)
         except Exception as e: print(e)  
-    
+    directory_path = os.path.dirname(file)
+    k_path = os.path.join(directory_path,'keywords.txt')
+    if os.path.exists(k_path):
+        os.remove(k_path)
+    with open(k_path,'a') as fl:
+        fl.write('\n'.join(matched))    
     for page in doc:
         for match in matched:
             words = page.search_for(match.strip(), ignorecase=True)   
