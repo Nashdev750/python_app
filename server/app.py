@@ -79,7 +79,7 @@ def upload_file():
 
             # Save each file in the folder
             for file in files:
-                if file.filename.endswith('.pdf'):
+                if file.filename.endswith('.pdf') or file.filename.endswith('.PDF'):
                     file.save(os.path.join(folder_name+"/"+customer, file.filename))
 
             # Get the total number of files in the folder 
