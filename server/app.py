@@ -124,21 +124,24 @@ def get_pdf():
     folder = urllib.parse.unquote(request.args.get("folder"))
     customer = urllib.parse.unquote(request.args.get("customer"))
     pdf_path =os.path.abspath(folder)+'/'+customer+'/processed'
-    # search_path = os.path.join(pdf_path, "*.pdf")
-    # pdf_files = glob.glob(search_path)
-    pdf_files = [file for file in os.listdir(pdf_path) if file.lower().endswith('.pdf')]
+    if os.path.exists(pdf_path):
+        # search_path = os.path.join(pdf_path, "*.pdf")
+        # pdf_files = glob.glob(search_path)
+        pdf_files = [file for file in os.listdir(pdf_path) if file.lower().endswith('.pdf')]
 
-    # pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
-  
-    if(len(pdf_files)>0):
-        return send_from_directory(pdf_path, pdf_files[0])
+        # pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
+    
+        if(len(pdf_files)>0):
+            return send_from_directory(pdf_path, pdf_files[0])
     else:
         pdf_path =os.path.abspath(folder)+'/'+customer
+        if not os.path.exists(pdf_path): return send_from_directory(pdf_path, 'none.pdf')
         # search_path = os.path.join(pdf_path, "*.pdf")
         # pdf_files = glob.glob(search_path)
         # print(pdf_path)
         # pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
         # print(pdf_files)
+        # print(pdf_path)
         pdf_files = [file for file in os.listdir(pdf_path) if file.lower().endswith('.pdf')]
         if(len(pdf_files)>0):
              return send_from_directory(pdf_path, pdf_files[0])
