@@ -1,9 +1,20 @@
-import sys
 import os
-import glob
 from script import processfile, keywords_search
+import fitz
 
- 
+def is_image_pdf(pdf_path):
+    doc = fitz.open(pdf_path)
+    is_image = True
+
+    for page in doc:
+        if page.get_text("text") != "":
+            is_image = False
+            break
+
+    doc.close()
+
+    return is_image
+
 
 def get_files(folder_name):
     directory_path = os.path.join(os.getcwd(), folder_name)
@@ -13,13 +24,15 @@ def get_files(folder_name):
             pdf_files_paths.append(entry.path)
     
     return pdf_files_paths
-
-if __name__ =='__main__':
-    files = get_files('june 2023')
+def process_pdf_file(folder):
+    files = get_files(folder)
+    if len(files) < 1: return False
+    isimg = is_image_pdf(files[0])
     print(files)
+    if isimg: return True
     for file in  files:
         try:
              p = processfile(file)
-             print(p)
              keywords_search(p)
-        except Exception as e: print(e)  
+        except: pass    
+    return False

@@ -5,6 +5,7 @@ import colorsys
 import glob
 import zipfile
 import os
+from getkeywords import read_google_sheet_column
 
 colors = [
         (0,1,0),
@@ -108,7 +109,7 @@ def keywords_search(file):
     text = ''
     for page in doc:
         text +=page.get_text()+" "
-    keywords = read_keywords()
+    keywords = read_google_sheet_column()
     matched = []
     for keyword in keywords:
         try:
@@ -124,23 +125,24 @@ def keywords_search(file):
         os.remove(k_path)
     with open(k_path,'a') as fl:
         fl.write('\n'.join(matched))    
-    for page in doc:
-        for match in matched:
-            words = page.search_for(match.strip(), ignorecase=True)   
-            for word in words:
-                color = colors[3]
-                points = list(word)
-                points[0] = points[0]-12
-                points[2] = points[2]+12
-             
-                text_in_rect = page.get_textbox(tuple(points))
-                pattern = r"\b" + re.escape(match.strip()) + r"\b"
-                found = re.findall(pattern, text_in_rect, re.IGNORECASE)
-                if len(found) > 0:
-                    add_highlight_annot(page, word, color) 
    
-    doc.saveIncr()
-    doc.close()                
+    # for page in doc:
+    #     for match in matched:
+    #         words = page.search_for(match.strip(), ignorecase=True)   
+    #         for word in words:
+    #             color = colors[3]
+    #             points = list(word)
+    #             points[0] = points[0]-12
+    #             points[2] = points[2]+12
+             
+    #             text_in_rect = page.get_textbox(tuple(points))
+    #             pattern = r"\b" + re.escape(match.strip()) + r"\b"
+    #             found = re.findall(pattern, text_in_rect, re.IGNORECASE)
+    #             if len(found) > 0:
+    #                 add_highlight_annot(page, word, color) 
+   
+    # doc.saveIncr()
+    # doc.close()                
          
     # RuntimeError: Can't do incremental writes on a repaired file    
     # 5.10 Normal\05-02-2023\BUDD LAKE DINER\NEW MID Statement-534701850101809-04-2023.pdf    
@@ -187,13 +189,23 @@ def processfile(file_name):
                     search = " "+word+" "
                     if '-' in word[-1]:
                         search = " "+word.replace('-', '')
-                    matches = page.search_for(search, quads=True)
+                    matches = page.search_for(search)
                     for match in matches:
-                        points = [list(inner_tuple) for inner_tuple in match]
-                        if points[1][0] - points[0][0] < 6:
+                        points = list(match)
+                        print(points[2] - points[0])
+                        if points[2] - points[0] < 6:
                             continue
                         else:
-                            add_highlight_annot(page, match, color)
+                            points[0] = 0
+                            points[2] = page.rect.width
+                            add_highlight_annot(page, tuple(points), color)
+                            # add_highlight_annot(page, match, color)
+                        # points = [list(inner_tuple) for inner_tuple in match]
+                        # if points[1][0] - points[0][0] < 6:
+                        #     continue
+                        # else:
+                        #     add_highlight_annot(page, match, color)
+                            
                     wrds.append(word)        
         # Highlight the nsf  
         for page in doc: 

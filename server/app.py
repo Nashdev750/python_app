@@ -5,6 +5,8 @@ import glob
 import os
 import urllib.parse
 from process_files import process_file
+from process_pdf import process_pdf_file
+from messages import send_message
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -52,7 +54,6 @@ def get_files():
 def upload_file():
     try:
         # Get the files and folder name from the request
-        
         folder_names = request.form.get('folders').split(',')
         customer = request.form.get('customer')
         file_count = 0
@@ -89,6 +90,16 @@ def upload_file():
         print(e)
         return jsonify({"error":str(e)})
 
+@app.route('/api/process/test', methods=['POST'])
+def process_files_test():
+    folder_name = request.json.get('folder')
+    customer = request.json.get('customer')
+    try:
+        command = ['python', 'process_files.py', folder_name+"/"+customer]
+        subprocess.Popen(command)
+    except Exception as e: print(e)    
+    return jsonify({"image":"Image file processing in background"})
+
 @app.route('/api/process', methods=['POST'])
 def process_files():
       # Get the folder name from the request
@@ -99,9 +110,18 @@ def process_files():
     if not os.path.exists(folder_name+"/"+customer):
         return jsonify({'error': 'Folder not found'})
     
-    # command = ['python', 'process_files.py', folder_name+"/"+customer]
-    # subprocess.Popen(command)
-    process_file(folder_name+"/"+customer)
+    
+    try:
+        isimg = process_pdf_file(os.path.join(folder_name,customer))
+        print(isimg)
+        if isimg:
+            command = ['python', 'process_files.py', folder_name+"/"+customer]
+            subprocess.Popen(command)
+            return jsonify({"image":"Image file processing in background"})
+
+    except Exception as e: 
+        print(e)
+        pass 
     
     return jsonify({"processing":"done"})
 
@@ -125,23 +145,14 @@ def get_pdf():
     customer = urllib.parse.unquote(request.args.get("customer"))
     pdf_path =os.path.abspath(folder)+'/'+customer+'/processed'
     if os.path.exists(pdf_path):
-        # search_path = os.path.join(pdf_path, "*.pdf")
-        # pdf_files = glob.glob(search_path)
+        
         pdf_files = [file for file in os.listdir(pdf_path) if file.lower().endswith('.pdf')]
-
-        # pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
     
         if(len(pdf_files)>0):
             return send_from_directory(pdf_path, pdf_files[0])
     else:
         pdf_path =os.path.abspath(folder)+'/'+customer
         if not os.path.exists(pdf_path): return send_from_directory(pdf_path, 'none.pdf')
-        # search_path = os.path.join(pdf_path, "*.pdf")
-        # pdf_files = glob.glob(search_path)
-        # print(pdf_path)
-        # pdf_files = [os.path.basename(file) for file in pdf_files if os.path.isfile(file)]
-        # print(pdf_files)
-        # print(pdf_path)
         pdf_files = [file for file in os.listdir(pdf_path) if file.lower().endswith('.pdf')]
         if(len(pdf_files)>0):
              return send_from_directory(pdf_path, pdf_files[0])
