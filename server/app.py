@@ -115,6 +115,7 @@ def process_files():
         isimg = process_pdf_file(os.path.join(folder_name,customer))
         print(isimg)
         if isimg:
+            send_message('Image file processing in the background, please wait...')
             command = ['python', 'process_files.py', folder_name+"/"+customer]
             subprocess.Popen(command)
             return jsonify({"image":"Image file processing in background"})

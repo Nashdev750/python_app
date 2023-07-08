@@ -8,7 +8,8 @@ const cors = require('cors')
 const io = new Server(server,{
     cors:{
         origin:'*',
-    }
+    },
+    path:'/io/'
 });
 
 
@@ -17,12 +18,13 @@ app.use(cors())
 const PORT = process.env.PORT || 8000
 
 
-app.get('/',(req,res)=>{
-    res.status(404).send();
-})
+// app.get('/',(req,res)=>{
+//     res.status(404).send();
+// })
 
 
 io.on('connection',(socket)=>{
+    console.log(socket.id)
     socket.emit('me',socket.id)
     socket.on('progress',(data)=>{
         console.log(data)
