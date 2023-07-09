@@ -144,7 +144,11 @@ def get_file_list():
 def get_pdf():
     folder = urllib.parse.unquote(request.args.get("folder"))
     customer = urllib.parse.unquote(request.args.get("customer"))
+    print(customer)
+    print(request.args.get("customer"))
+    print(folder)
     pdf_path =os.path.abspath(folder)+'/'+customer+'/processed'
+    print(pdf_path)
     if os.path.exists(pdf_path):
         
         pdf_files = [file for file in os.listdir(pdf_path) if file.lower().endswith('.pdf')]

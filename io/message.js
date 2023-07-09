@@ -6,5 +6,5 @@ const socket = io('https://www.openmca.com',{path:'/io/'});
 const message = process.argv[2];
 
 socket.emit('progress',{message})
-
+socket.disconnect();
 

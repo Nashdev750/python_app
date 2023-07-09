@@ -98,7 +98,7 @@ def convert_pdf_to_images(pdf_path):
     send_message("Extracting images from pdf")
     output_folder = os.path.dirname(pdf_path)
     doc = fitz.open(pdf_path)
-    dpi = 150
+    dpi = 50
     for i, page in enumerate(doc):
         
         pix = page.get_pixmap(matrix=fitz.Matrix(dpi/72, dpi/72), alpha=False)
