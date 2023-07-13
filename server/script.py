@@ -186,7 +186,7 @@ def processfile(file_name):
             for word in words:
                 if word in wrds:
                     continue
-                val = token.replace('$','').replace(',','').replace(' ','').replace('-','').strip()
+                val = word.replace('$','').replace(',','').replace(' ','').replace('-','').strip()
                 if(float(val)==35 or float(val)==36):
                     color = (1,0,0)
                 for page in doc:
