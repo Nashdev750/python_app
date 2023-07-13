@@ -4,9 +4,9 @@ from flask_cors import CORS
 import glob
 import os
 import urllib.parse
-from process_files import process_file
+# from process_files import process_file
 from process_pdf import process_pdf_file
-from messages import send_message
+# from messages import send_message
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -113,11 +113,11 @@ def process_files():
     
     try:
         isimg = process_pdf_file(os.path.join(folder_name,customer))
-        print(isimg)
+        
         if isimg:
-            send_message('Image file processing in the background, please wait...')
-            command = ['python', 'process_files.py', folder_name+"/"+customer]
-            subprocess.Popen(command)
+            # send_message('Image file processing in the background, please wait...')
+            # command = ['python', 'process_files.py', folder_name+"/"+customer]
+            # subprocess.Popen(command)
             return jsonify({"image":"Image file processing in background"})
 
     except Exception as e: 

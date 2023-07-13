@@ -6,6 +6,7 @@ import glob
 import zipfile
 import os
 from getkeywords import read_google_sheet_column
+import PyPDF2
 
 colors = [
         (0,1,0),
@@ -105,10 +106,13 @@ def read_keyword(path):
        return []
 
 def keywords_search(file):
-    doc = fitz.open(file)
+    pdffileobj=open(file,'rb')
+    doc=PyPDF2.PdfReader(pdffileobj)
     text = ''
-    for page in doc:
-        text +=page.get_text()+" "
+    for page in doc.pages:
+        text +=page.extract_text()+" "
+
+    print(text)
     keywords = read_google_sheet_column()
     matched = []
     for keyword in keywords:
@@ -151,32 +155,29 @@ image_files = []
 def processfile(file_name):
         doc = fitz.open(file_name)
         print('processing '+file_name.split("/")[-1])
+        pdffileobj=open(file_name,'rb')
+        pdfreader=PyPDF2.PdfReader(pdffileobj)
         # Iterate through all the pages
         duplicates = {}
-        for page in doc:
+        for page in pdfreader.pages:
             # Get the text on the page
-            text = page.get_text() 
-            if text == '':
-                image_files.append(file_name)
-                break  
+            text = page.extract_text()
+
             # Find all the matches for the pattern
             pattern = r"\-?\ ?\$?-?[\d,]+\.\d{2}\-?"
             # pattern = r"\-?\$?-?[\d,]+\.\d{2}"
             text_matches = re.findall(pattern, text)
-
             # find the duplicates
             for token in text_matches:
-                amount = token.replace('$','').replace(',','').replace(' ','').strip()
-                if '-' in amount:
-                    amount = amount.replace('-','')
-                    # amount = '-'+amount
+                amount = token.replace('$','').replace(',','').replace(' ','').replace('-','').strip()
+                
                 if amount in duplicates:
                     duplicates[amount][0] +=1
                     if token not in duplicates[amount]:
                         duplicates[amount].append(token)
                 else:
                     duplicates[amount] = [1,token]  
-        duplicates_list = [value[1:] for key, value in duplicates.items() if value[0] > 2 and (float(key) >= 26 and float(key) <= 20000)] 
+        duplicates_list = [value[1:] for key, value in duplicates.items() if (value[0] > 2 and (float(key) >= 50 and float(key) <= 50000)) or (float(key)==36 or float(key)==35)] 
         # Highlight the duplicate matches
         for index, words in enumerate(duplicates_list):
             # break
@@ -185,11 +186,16 @@ def processfile(file_name):
             for word in words:
                 if word in wrds:
                     continue
+                val = token.replace('$','').replace(',','').replace(' ','').replace('-','').strip()
+                if(float(val)==35 or float(val)==36):
+                    color = (1,0,0)
                 for page in doc:
                     search = " "+word+" "
                     if '-' in word[-1]:
                         search = " "+word.replace('-', '')
                     matches = page.search_for(search)
+                    if len(matches) == 0:
+                        matches = page.search_for(" ".join(search)) 
                     for match in matches:
                         points = list(match)
                         print(points[2] - points[0])
@@ -208,16 +214,16 @@ def processfile(file_name):
                             
                     wrds.append(word)        
         # Highlight the nsf  
-        for page in doc: 
-            # break                
-            nsf = page.search_for('nsf:', ignorecase=True)
-            nsf2 = page.search_for('(nsf)',ignorecase=True)
+        # for page in doc: 
+        #     # break                
+        #     nsf = page.search_for('nsf:', ignorecase=True)
+        #     nsf2 = page.search_for('(nsf)',ignorecase=True)
                         
-            for match in nsf:
-                add_highlight_annot_nsf(page, match,'nsf:')
+        #     for match in nsf:
+        #         add_highlight_annot_nsf(page, match,'nsf:')
 
-            for match in nsf2:
-                add_highlight_annot_nsf(page, match,'(nsf)') 
+        #     for match in nsf2:
+        #         add_highlight_annot_nsf(page, match,'(nsf)') 
 
         # Save the modified PDF file
 
@@ -239,18 +245,16 @@ def processfile(file_name):
 
 # if __name__ =='__main__':
 #      # Search for PDF files in Google Drive
-#     unzip_files_recursively()
+#     # unzip_files_recursively()
 #     data = get_files()
 #     if data is not None:
 #         failed = []
 #         for file in data:
-            
-#             # keyword_process = multiprocessing.Process(target=keywords_search, args=(doc,))
-#             # keyword_process.start()
 #             try:
 #                 processfile(file)
 #                 keywords_search(file) 
-#             except: 
+#             except Exception as e:
+#               print(e) 
 #               failed.append(file)
              
                
