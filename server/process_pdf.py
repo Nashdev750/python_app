@@ -34,5 +34,5 @@ def process_pdf_file(folder):
         try:
              p = processfile(file)
              keywords_search(p)
-        except: pass    
+        except Exception: pass    
     return False

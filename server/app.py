@@ -82,7 +82,8 @@ def upload_file():
             for file in files:
                 if file.filename.endswith('.pdf') or file.filename.endswith('.PDF'):
                     file.save(os.path.join(folder_name+"/"+customer, file.filename))
-
+                    command = ['python', 'upload_files.py', folder_name+"/"+customer+"/"+file.name]
+                    subprocess.Popen(command)
             # Get the total number of files in the folder 
         response = {'message': 'Files uploaded successfully', 'files': 3}
         return jsonify(response)  

@@ -105,22 +105,37 @@ def read_keyword(path):
     except:    
        return []
 
-def keywords_search(file):
+def keywords_search(data):
+    file = data['path']
+    linetext = data['text']
+    print(linetext)
     pdffileobj=open(file,'rb')
     doc=PyPDF2.PdfReader(pdffileobj)
     text = ''
     for page in doc.pages:
-        text +=page.extract_text()+" "
-
-    print(text)
+        try:
+            text +=page.extract_text()+" "
+        except:pass    
+    if text == '':
+        doc = fitz.open(file)
+        for page in doc:
+            text +=page.get_text()
+   
     keywords = read_google_sheet_column()
     matched = []
     for keyword in keywords:
         try:
-            pattern = r"\b" + re.escape(str(keyword)) + r"\b"
-            matches = re.findall(pattern, text, re.IGNORECASE)
+            pattern = r"\b{}\b".format(r"\s?".join(list(keyword)))
+            matches = re.findall(pattern, text, re.IGNORECASE) 
             if len(matches) > 0:
                 if keyword not in matched:
+                    # dollarvalue = ''
+                    # for key, value in linetext.items():
+                    #     m = re.findall(pattern, value, re.IGNORECASE) 
+                    #     if len(m) > 0:
+                    #         dollarvalue = key
+                    #         matched.append(keyword+' '+str(key))
+                    # if dollarvalue == '':    
                     matched.append(keyword)
         except Exception as e: print(e)  
     directory_path = os.path.dirname(file)
@@ -154,22 +169,26 @@ def keywords_search(file):
 image_files = []
 def processfile(file_name):
         doc = fitz.open(file_name)
-        print('processing '+file_name.split("/")[-1])
-        pdffileobj=open(file_name,'rb')
-        pdfreader=PyPDF2.PdfReader(pdffileobj)
         # Iterate through all the pages
         duplicates = {}
-        for page in pdfreader.pages:
-            # Get the text on the page
-            text = page.extract_text()
+        annotations = {} 
+            
+        for page in doc:
+            text = page.get_text()
 
             # Find all the matches for the pattern
-            pattern = r"\-?\ ?\$?-?[\d,]+\.\d{2}\-?"
+            # pattern = r"\-?\ ?\$?-?[\d,]+\.\d{2}\-?"
+            regex = r"(([$\-+]+)?([\d][,\][ ]?)+([.])(( )?[\d]( )?){2}([$\-+]+)?)"
+            # Find all matches of the regular expression in the string
+            matches1 = re.findall(regex, text)
+            flattened_result = [match[0] for match in matches1]
             # pattern = r"\-?\$?-?[\d,]+\.\d{2}"
-            text_matches = re.findall(pattern, text)
+            # text_matches = re.findall(pattern, text)
             # find the duplicates
-            for token in text_matches:
-                amount = token.replace('$','').replace(',','').replace(' ','').replace('-','').strip()
+            for token in flattened_result:
+                pattern = r'[^\d.]+'
+                amount = re.sub(pattern, '', token)
+                # amount = token.replace('$','').replace(',','').replace(' ','').replace('-','').replace('+','').strip()
                 
                 if amount in duplicates:
                     duplicates[amount][0] +=1
@@ -177,7 +196,7 @@ def processfile(file_name):
                         duplicates[amount].append(token)
                 else:
                     duplicates[amount] = [1,token]  
-        duplicates_list = [value[1:] for key, value in duplicates.items() if (value[0] > 2 and (float(key) >= 50 and float(key) <= 50000)) or (float(key)==36 or float(key)==35)] 
+        duplicates_list = [value[1:] for key, value in duplicates.items() if (value[0] > 0 and (float(key) >= 50 and float(key) <= 50000)) or (float(key)==36 or float(key)==35)] 
         # Highlight the duplicate matches
         for index, words in enumerate(duplicates_list):
             # break
@@ -186,7 +205,8 @@ def processfile(file_name):
             for word in words:
                 if word in wrds:
                     continue
-                val = word.replace('$','').replace(',','').replace(' ','').replace('-','').strip()
+                pattern = r'[^\d.]+'
+                val = re.sub(pattern, '', word)
                 if(float(val)==35 or float(val)==36):
                     color = (1,0,0)
                 for page in doc:
@@ -198,34 +218,17 @@ def processfile(file_name):
                         matches = page.search_for(" ".join(search)) 
                     for match in matches:
                         points = list(match)
-                        print(points[2] - points[0])
                         if points[2] - points[0] < 6:
                             continue
                         else:
                             points[0] = 0
                             points[2] = page.rect.width
-                            add_highlight_annot(page, tuple(points), color)
-                            # add_highlight_annot(page, match, color)
-                        # points = [list(inner_tuple) for inner_tuple in match]
-                        # if points[1][0] - points[0][0] < 6:
-                        #     continue
-                        # else:
-                        #     add_highlight_annot(page, match, color)
-                            
-                    wrds.append(word)        
-        # Highlight the nsf  
-        # for page in doc: 
-        #     # break                
-        #     nsf = page.search_for('nsf:', ignorecase=True)
-        #     nsf2 = page.search_for('(nsf)',ignorecase=True)
-                        
-        #     for match in nsf:
-        #         add_highlight_annot_nsf(page, match,'nsf:')
-
-        #     for match in nsf2:
-        #         add_highlight_annot_nsf(page, match,'(nsf)') 
-
-        # Save the modified PDF file
+                            rect = fitz.Rect(points[0],points[1],points[2],points[3])
+                            linetext = page.get_textbox(rect)
+                            annotations[search] = linetext
+                            print(linetext, search)
+                            add_highlight_annot(page, tuple(points), color)   
+                    wrds.append(word)  
 
         processed_folder = os.path.join(os.path.dirname(file_name), 'processed')
         if not os.path.exists(processed_folder):
@@ -236,7 +239,11 @@ def processfile(file_name):
        
         doc.save(processed_file_path)
         doc.close()
-        return processed_file_path
+        data = {
+            "path":processed_file_path,
+            "text": annotations
+        }
+        return data
         
         
                 
